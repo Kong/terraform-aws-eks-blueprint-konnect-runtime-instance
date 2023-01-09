@@ -1,0 +1,89 @@
+# -----------------------------------------------------------------------------
+# Deployment parameters
+# -----------------------------------------------------------------------------
+
+deployment:
+  userDefinedVolumes:
+  - name: ${awsSecretName}
+    csi:
+      driver: "secrets-store.csi.k8s.io"
+      readOnly: true
+      volumeAttributes: 
+        secretProviderClass: ${awsSecretName}
+  
+  userDefinedVolumeMounts:
+  - name: ${awsSecretName}
+    mountPath: "/mnt/secrets/"
+    readOnly: true
+
+
+#----------------
+# ENV
+#----------------
+
+
+env:
+  database :  "off"
+  cluster_cert : /mnt/secrets/${cert}
+  cluster_cert_key :  /mnt/secrets/${key}
+  lua_ssl_trusted_certificate : "system"
+  konnect_mode : "on"
+  vitals : "off"
+  cluster_mtls :  "pki" 
+  cluster_control_plane : "${clusterDns}:443"
+  cluster_server_name : ${clusterDns}
+  cluster_telemetry_endpoint : "${telementryDns}:443"
+  cluster_telemetry_server_name : ${telementryDns}
+  role : "data_plane"
+
+
+ 
+
+#-------------------------------------------------------------------------------
+# Kong parameters
+# -----------------------------------------------------------------------------
+
+proxy:
+  enabled: true
+  type: LoadBalancer
+  annotations: 
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: "Type=proxy"
+    external-dns.alpha.kubernetes.io/hostname: "proxy.kong-dp.internal"
+  
+ingressController:
+  enabled: false
+
+resources:
+  limits:
+    cpu: 1200m
+    memory: 800Mi
+  requests:
+    cpu: 300m
+    memory: 300Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 20
+  
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
+
+enterprise:
+  enabled: false
+
+manager:
+  enabled: false
+
+portal:
+  enabled: false
+
+portalapi:
+  enabled: false
+
