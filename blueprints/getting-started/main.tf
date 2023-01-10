@@ -89,14 +89,14 @@ module "eks_blueprints_kubernetes_addons" {
 
   enable_secrets_store_csi_driver_provider_aws = true
 
-  enable_kong                                  = true
+  enable_kong = true
 
   kong_helm_config = {
     version          = "2.13.1"
-    cluster_dns      = ""
-    telemetry_dns    = ""
-    cert_secret_name = ""
-    key_secret_name  = ""
+    cluster_dns      = var.cluster_dns
+    telemetry_dns    = var.telemetry_dns
+    cert_secret_name = var.cert_secret_name
+    key_secret_name  = var.key_secret_name
   }
   tags = local.tags
 
