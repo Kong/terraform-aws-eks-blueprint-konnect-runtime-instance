@@ -3,9 +3,9 @@ module "helm_addon" {
   source            = "../terraform-aws-eks-blueprints/modules/kubernetes-addons/helm-addon"
   manage_via_gitops = var.manage_via_gitops
   helm_config       = local.helm_config
-  # irsa_config       = local.irsa_config
+
   addon_context = var.addon_context
-  depends_on    = [kubectl_manifest.csi_secrets_store_crd, module.irsa_kong]
+  depends_on    = [kubectl_manifest.csi_secrets_store_crd]
 }
 
 # irsa 
@@ -14,8 +14,8 @@ module "irsa_kong" {
   create_kubernetes_namespace       = false
   create_kubernetes_service_account = true
   kubernetes_namespace              = local.helm_config["namespace"]
-  kubernetes_service_account        = local.service_account
-  irsa_iam_policies                 = concat([aws_iam_policy.kong_secret.arn], var.irsa_policies)
+  kubernetes_service_account        = local.helm_config["service_account"]
+  irsa_iam_policies                 = concat([aws_iam_policy.iam_policy.arn], var.irsa_policies)
   eks_cluster_id                    = var.addon_context.eks_cluster_id
   eks_oidc_provider_arn             = var.addon_context.eks_oidc_provider_arn
   depends_on = [
@@ -39,17 +39,7 @@ resource "kubectl_manifest" "csi_secrets_store_crd" {
       secretObjects = [
         {
           secretName = local.helm_config["secret_provider_class"]
-          type       = "opaque"
-          data : [
-            {
-              objectName = local.helm_config["cert_secret_name"]
-              key        = "test"
-            },
-            {
-              objectName = local.helm_config["key_secret_name"]
-              key        = "key"
-            }
-          ]
+          type       = "kubernetes.io/tls"
         }
       ]
 
@@ -71,6 +61,7 @@ resource "kubectl_manifest" "csi_secrets_store_crd" {
 #creating namespace
 
 resource "kubernetes_namespace_v1" "kong_namespace" {
+  count = try(local.helm_config["create_namespace"], true) && local.helm_config["namespace"] != "kube-system" ? 1 : 0
   metadata {
     name = local.helm_config["namespace"]
 

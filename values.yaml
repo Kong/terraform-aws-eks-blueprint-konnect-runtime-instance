@@ -4,15 +4,15 @@
 
 deployment:
   userDefinedVolumes:
-  - name: ${awsSecretName}
+  - name: ${secretProviderClass}
     csi:
       driver: "secrets-store.csi.k8s.io"
       readOnly: true
       volumeAttributes: 
-        secretProviderClass: ${awsSecretName}
+        secretProviderClass: ${secretProviderClass}
   
   userDefinedVolumeMounts:
-  - name: ${awsSecretName}
+  - name: ${secretProviderClass}
     mountPath: "/mnt/secrets/"
     readOnly: true
 
@@ -24,8 +24,8 @@ deployment:
 
 env:
   database :  "off"
-  cluster_cert : /mnt/secrets/${cert}
-  cluster_cert_key :  /mnt/secrets/${key}
+  cluster_cert : /mnt/secrets/${certSecretName}
+  cluster_cert_key :  /mnt/secrets/${keySecretName}
   lua_ssl_trusted_certificate : "system"
   konnect_mode : "on"
   vitals : "off"

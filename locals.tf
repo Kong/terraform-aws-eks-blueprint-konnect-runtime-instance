@@ -15,7 +15,7 @@ locals {
     repository       = "https://charts.konghq.com"
     version          = "2.13.1"
     namespace        = local.name
-    create_namespace = false
+    create_namespace = true
     values           = local.default_helm_values
 
     service_account       = local.service_account
@@ -44,11 +44,11 @@ locals {
   }
 
   default_helm_values = [templatefile("${path.module}/values.yaml", {
-    awsSecretName = local.secret_provider_class
-    clusterDns    = local.cluster_dns
-    telementryDns = local.telemetry_dns
-    cert          = local.cert_secret_name
-    key           = local.key_secret_name
+    secretProviderClass = local.secret_provider_class
+    clusterDns          = local.cluster_dns
+    telementryDns       = local.telemetry_dns
+    certSecretName      = local.cert_secret_name
+    keySecretName       = local.key_secret_name
 
   })]
 
@@ -65,19 +65,22 @@ locals {
 }
 
 
-resource "aws_iam_policy" "kong_secret" {
+resource "aws_iam_policy" "iam_policy" {
   name        = "${var.addon_context.eks_cluster_id}-kong"
   description = "IAM Policy for Kong"
-  policy      = data.aws_iam_policy_document.kong_secret.json
+  policy      = data.aws_iam_policy_document.iam_policy.json
 }
 
-data "aws_iam_policy_document" "kong_secret" {
+data "aws_iam_policy_document" "iam_policy" {
   statement {
     actions = [
       "secretsmanager:DescribeSecret",
       "secretsmanager:GetSecretValue"
     ]
-    resources = ["*"]
+    resources = [
+      "arn:aws:secretsmanager:${var.addon_context.aws_region_name}:${var.addon_context.aws_caller_identity_account_id}:secret:${local.cert_secret_name}-*",
+      "arn:aws:secretsmanager:${var.addon_context.aws_region_name}:${var.addon_context.aws_caller_identity_account_id}:secret:${local.key_secret_name}-*"
+    ]
 
   }
 }
