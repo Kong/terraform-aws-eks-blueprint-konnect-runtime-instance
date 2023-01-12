@@ -1,5 +1,5 @@
 locals {
-  name                  = "kong"
+  name                  = "kong-konnect"
   service_account       = try(var.helm_config.service_account, "kong-sa")
   secret_provider_class = try(var.helm_config.secret_provider_class, "kong-secret-provider-class")
   cluster_dns           = try(var.helm_config.cluster_dns, null)
