@@ -4,13 +4,14 @@ module "helm_addon" {
   manage_via_gitops = var.manage_via_gitops
   helm_config       = local.helm_config
 
-  addon_context = var.addon_context
-  depends_on    = [kubectl_manifest.csi_secrets_store_crd]
+  addon_context     = var.addon_context
+  depends_on        = [kubectl_manifest.csi_secrets_store_crd]
 }
 
 # irsa 
 module "irsa_kong" {
-  source                            = "../terraform-aws-eks-blueprints/modules/irsa"
+  source                            = "github.com/aws-ia/terraform-aws-eks-blueprints/modules/kubernetes-addons/helm-addon"
+  # source                            = "../terraform-aws-eks-blueprints/modules/irsa"
   create_kubernetes_namespace       = false
   create_kubernetes_service_account = true
   kubernetes_namespace              = local.helm_config["namespace"]
