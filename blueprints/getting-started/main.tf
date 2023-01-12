@@ -90,7 +90,7 @@ module "eks_blueprints_kubernetes_addons" {
 
   enable_secrets_store_csi_driver_provider_aws = true
 
-  enable_kong = true
+  enable_kong_konnect = true
 
   kong_helm_config = {
     version          = "2.13.1"
