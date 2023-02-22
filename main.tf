@@ -1,6 +1,5 @@
 module "helm_addon" {
-  #  source            = "github.com/aws-ia/terraform-aws-eks-blueprints/modules/kubernetes-addons/helm-addon"
-  source            = "../terraform-aws-eks-blueprints/modules/kubernetes-addons/helm-addon"
+  source            = "github.com/aws-ia/terraform-aws-eks-blueprints/modules/kubernetes-addons/helm-addon"
   manage_via_gitops = var.manage_via_gitops
   helm_config       = local.helm_config
   set_values        = local.set_values
@@ -10,7 +9,7 @@ module "helm_addon" {
 
 # irsa 
 module "irsa_kong" {
-  source                            = "../terraform-aws-eks-blueprints/modules/irsa"
+  source                            = "github.com/aws-ia/terraform-aws-eks-blueprints/terraform-aws-eks-blueprints/modules/irsa"
   create_kubernetes_namespace       = false
   create_kubernetes_service_account = true
   kubernetes_namespace              = local.helm_config["namespace"]
@@ -30,7 +29,7 @@ resource "kubectl_manifest" "secretstore" {
 apiVersion: external-secrets.io/v1beta1
 kind: SecretStore
 metadata:
-  name: ${local.secretstore_name}
+  name: kong-secretstore
   namespace: ${local.helm_config["namespace"]}
 spec:
   provider:
@@ -52,15 +51,15 @@ resource "kubectl_manifest" "secret" {
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
-  name: ${local.external_secrets}
+  name: ${local.kong_external_secrets}
   namespace: ${local.helm_config["namespace"]}
 spec:
   refreshInterval: 1h
   secretStoreRef:
-    name: ${local.secretstore_name}
+    name: kong-secretstore
     kind: SecretStore
   target:
-    name: ${local.external_secrets}
+    name: ${local.kong_external_secrets}
     creationPolicy: Owner
     template:
       type: kubernetes.io/tls

@@ -59,3 +59,21 @@ See the [Kong Helm Chart](https://github.com/Kong/charts)
 | Name | Description |
 |------|-------------|
 | <a name="output_argocd_gitops_config"></a> [argocd\_gitops\_config](#output\_argocd\_gitops\_config) | Configuration used for managing the add-on with ArgoCD |
+
+<!-- BEGIN_TF_DOCS -->
+### Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| addon_context | Input configuration for the addon | <pre>object({<br>    aws_caller_identity_account_id = string<br>    aws_caller_identity_arn        = string<br>    aws_eks_cluster_endpoint       = string<br>    aws_partition_id               = string<br>    aws_region_name                = string<br>    eks_cluster_id                 = string<br>    eks_oidc_issuer_url            = string<br>    eks_oidc_provider_arn          = string<br>    tags                           = map(string)<br>  })</pre> | n/a | yes |
+| enable_external_secrets | Enable K8s External Secrets | `bool` | `true` | no |
+| helm_config | Kong Helm Configuration | `any` | `{}` | no |
+| irsa_policies | Additional IAM policies for a IAM role for service accounts | `list(string)` | `[]` | no |
+| manage_via_gitops | Determines if the add-on should be managed via GitOps. | `bool` | `false` | no |
+
+### Outputs
+
+| Name | Description |
+|------|-------------|
+| argocd_gitops_config | Configuration used for managing the add-on with ArgoCD |
+<!-- END_TF_DOCS -->

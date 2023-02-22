@@ -34,5 +34,5 @@ variable "irsa_policies" {
 variable "enable_external_secrets" {
   type        = bool
   default     = true
-  description = "Enable AWS CSI Secrets Store Provider"
+  description = "Enable K8s External Secrets"
 }
