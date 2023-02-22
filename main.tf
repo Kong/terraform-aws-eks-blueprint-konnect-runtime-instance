@@ -62,6 +62,8 @@ spec:
   target:
     name: ${local.external_secrets}
     creationPolicy: Owner
+    template:
+      type: kubernetes.io/tls
   data:
   - secretKey: kong_cert
     remoteRef:

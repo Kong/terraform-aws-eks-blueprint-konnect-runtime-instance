@@ -1,7 +1,5 @@
 provider "aws" {
   region  = local.region
-  profile = "eks"
-
 }
 
 data "aws_eks_cluster_auth" "this" {
@@ -52,8 +50,7 @@ locals {
 #---------------------------------------------------------------
 
 module "eks_blueprints" {
-  #source = "github.com/aws-ia/terraform-aws-eks-blueprints"
-  source = "../../../terraform-aws-eks-blueprints"
+  source = "github.com/aws-ia/terraform-aws-eks-blueprints"
 
   cluster_name    = local.name
   cluster_version = "1.23"
@@ -75,9 +72,8 @@ module "eks_blueprints" {
 }
 
 module "eks_blueprints_kubernetes_addons" {
-  # Uncomment when main PR is mergerd in main branch 
-  #source = "github.com/aws-ia/terraform-aws-eks-blueprints/modules/kubernetes-addons"
-  source = "../../../terraform-aws-eks-blueprints/modules/kubernetes-addons"
+
+  source = "github.com/aws-ia/terraform-aws-eks-blueprints/modules/kubernetes-addons"
 
 
   eks_cluster_id       = module.eks_blueprints.eks_cluster_id
@@ -97,7 +93,7 @@ module "eks_blueprints_kubernetes_addons" {
     telemetry_dns    = var.telemetry_dns
     cert_secret_name = var.cert_secret_name
     key_secret_name  = var.key_secret_name
-    # values = [templatefile("${path.module}/kong_values.yaml", {})]
+    values = [templatefile("${path.module}/kong_values.yaml", {})]
   }
   tags = local.tags
 

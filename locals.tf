@@ -6,9 +6,8 @@ locals {
   cert_secret_name     = try(var.helm_config.cert_secret_name, null)
   key_secret_name      = try(var.helm_config.key_secret_name, null)
   secretstore_name     = try(var.helm_config.secretstore_name, "kong-secretstore")
-  external_secrets     = try(var.helm_config.external_secrets, "kong-external-secret")
-  length_secret_volume = try(length(yamldecode(var.helm_config.values[0])["secretVolumes"]), 0)
-  secret_manager_alias = try(var.helm_config.secret_manager_alias, "alias/aws/secretsmanager")
+  external_secrets     = try(var.helm_config.external_secrets, "kong-cluster-cert")
+  secret_volume_length = try(length(yamldecode(var.helm_config.values[0])["secretVolumes"]), 0)
 
   default_helm_config = {
 
@@ -27,7 +26,6 @@ locals {
     key_secret_name      = local.key_secret_name
     secretstore_name     = local.secretstore_name
     external_secrets     = local.external_secrets
-    secret_manager_alias = local.secret_manager_alias
 
 
     description = "The Kong Ingress Helm Chart configuration"
@@ -99,7 +97,7 @@ locals {
       value = false
     },
     {
-      name  = "secretVolumes[${local.length_secret_volume}]"
+      name  = "secretVolumes[${local.secret_volume_length}]"
       value = local.external_secrets
     }
   ]
@@ -114,12 +112,6 @@ locals {
   argocd_gitops_config = {
     enable = false
   }
-}
-
-#Get Arn of KMS
-
-data "aws_kms_alias" "secret_manager" {
-  name = local.secret_manager_alias
 }
 
 #Policy for External Secrets
@@ -149,7 +141,7 @@ resource "aws_iam_policy" "kong_secretstore" {
         "kms:Decrypt"
       ],
       "Resource": [
-        "${data.aws_kms_alias.secret_manager.arn}"
+        "arn:aws:kms:${var.addon_context.aws_region_name}:${var.addon_context.aws_caller_identity_account_id}:alias/aws/secretsmanager"
       ]
     }
   ]
