@@ -31,7 +31,7 @@ variable "irsa_policies" {
   default     = []
 }
 
-variable "enable_secrets_store_csi_driver_provider_aws" {
+variable "enable_external_secrets" {
   type        = bool
   default     = true
   description = "Enable AWS CSI Secrets Store Provider"

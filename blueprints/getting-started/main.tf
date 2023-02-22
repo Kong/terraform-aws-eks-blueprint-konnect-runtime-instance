@@ -1,6 +1,6 @@
 provider "aws" {
-  region = local.region
-
+  region  = local.region
+  profile = "eks"
 
 }
 
@@ -76,8 +76,8 @@ module "eks_blueprints" {
 
 module "eks_blueprints_kubernetes_addons" {
   # Uncomment when main PR is mergerd in main branch 
-  source = "github.com/aws-ia/terraform-aws-eks-blueprints/modules/kubernetes-addons"
-  # source = "../../../terraform-aws-eks-blueprints/modules/kubernetes-addons"
+  #source = "github.com/aws-ia/terraform-aws-eks-blueprints/modules/kubernetes-addons"
+  source = "../../../terraform-aws-eks-blueprints/modules/kubernetes-addons"
 
 
   eks_cluster_id       = module.eks_blueprints.eks_cluster_id
@@ -87,17 +87,17 @@ module "eks_blueprints_kubernetes_addons" {
 
   #K8s Add-ons
 
-
-  enable_secrets_store_csi_driver_provider_aws = true
+  enable_external_secrets = true
 
   enable_kong_konnect = true
 
   kong_helm_config = {
-    version          = "2.13.1"
+    version          = "2.16.5"
     cluster_dns      = var.cluster_dns
     telemetry_dns    = var.telemetry_dns
     cert_secret_name = var.cert_secret_name
     key_secret_name  = var.key_secret_name
+    # values = [templatefile("${path.module}/kong_values.yaml", {})]
   }
   tags = local.tags
 

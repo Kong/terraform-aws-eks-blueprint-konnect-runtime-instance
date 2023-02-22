@@ -1,48 +1,6 @@
-# -----------------------------------------------------------------------------
-# Deployment parameters
-# -----------------------------------------------------------------------------
-
-deployment:
-  userDefinedVolumes:
-  - name: ${secretProviderClass}
-    csi:
-      driver: "secrets-store.csi.k8s.io"
-      readOnly: true
-      volumeAttributes: 
-        secretProviderClass: ${secretProviderClass}
-  
-  userDefinedVolumeMounts:
-  - name: ${secretProviderClass}
-    mountPath: "/mnt/secrets/"
-    readOnly: true
-
-
-#----------------
-# ENV
-#----------------
-
-
-env:
-  database :  "off"
-  cluster_cert : /mnt/secrets/${certSecretName}
-  cluster_cert_key :  /mnt/secrets/${keySecretName}
-  lua_ssl_trusted_certificate : "system"
-  konnect_mode : "on"
-  vitals : "off"
-  cluster_mtls :  "pki" 
-  cluster_control_plane : "${clusterDns}:443"
-  cluster_server_name : ${clusterDns}
-  cluster_telemetry_endpoint : "${telementryDns}:443"
-  cluster_telemetry_server_name : ${telementryDns}
-  role : "data_plane"
-
-
- 
-
 #-------------------------------------------------------------------------------
 # Kong parameters
 # -----------------------------------------------------------------------------
-
 proxy:
   enabled: true
   type: LoadBalancer
@@ -50,9 +8,7 @@ proxy:
     service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
     service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: "Type=proxy"
     external-dns.alpha.kubernetes.io/hostname: "proxy.kong-dp.internal"
-  
-ingressController:
-  enabled: false
+
 
 resources:
   limits:
@@ -74,16 +30,4 @@ autoscaling:
         target:
           type: Utilization
           averageUtilization: 75
-
-enterprise:
-  enabled: false
-
-manager:
-  enabled: false
-
-portal:
-  enabled: false
-
-portalapi:
-  enabled: false
 
