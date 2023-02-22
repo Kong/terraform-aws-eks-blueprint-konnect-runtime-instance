@@ -5,7 +5,7 @@ locals {
   telemetry_dns        = try(var.helm_config.telemetry_dns, null)
   cert_secret_name     = try(var.helm_config.cert_secret_name, null)
   key_secret_name      = try(var.helm_config.key_secret_name, null)
-  external_secrets     = try(var.helm_config.external_secrets, "kong-cluster-cert")
+  kong_external_secrets     = try(var.helm_config.kong_external_secrets, "kong-cluster-cert")
   secret_volume_length = try(length(yamldecode(var.helm_config.values[0])["secretVolumes"]), 0)
 
   default_helm_config = {
@@ -23,7 +23,7 @@ locals {
     telemetry_dns    = local.telemetry_dns
     cert_secret_name = local.cert_secret_name
     key_secret_name  = local.key_secret_name
-    external_secrets = local.external_secrets
+    kong_external_secrets = local.kong_external_secrets
 
 
     description = "The Kong Ingress Helm Chart configuration"
@@ -48,11 +48,11 @@ locals {
     },
     {
       name  = "env.cluster_cert"
-      value = "/etc/secrets/${local.external_secrets}/kong_cert"
+      value = "/etc/secrets/${local.kong_external_secrets}/kong_cert"
     },
     {
       name  = "env.cluster_cert_key"
-      value = "/etc/secrets/${local.external_secrets}/kong_key"
+      value = "/etc/secrets/${local.kong_external_secrets}/kong_key"
     },
     {
       name  = "env.lua_ssl_trusted_certificate"
@@ -96,7 +96,7 @@ locals {
     },
     {
       name  = "secretVolumes[${local.secret_volume_length}]"
-      value = local.external_secrets
+      value = local.kong_external_secrets
     }
   ]
 
@@ -110,6 +110,11 @@ locals {
   argocd_gitops_config = {
     enable = false
   }
+}
+
+
+data "aws_kms_alias" "secret_manager" {
+  name = "alias/aws/secretsmanager"
 }
 
 #Policy for External Secrets
@@ -139,7 +144,7 @@ resource "aws_iam_policy" "kong_secretstore" {
         "kms:Decrypt"
       ],
       "Resource": [
-        "arn:aws:kms:${var.addon_context.aws_region_name}:${var.addon_context.aws_caller_identity_account_id}:alias/aws/secretsmanager"
+        "${data.aws_kms_alias.secret_manager.arn}"
       ]
     }
   ]
