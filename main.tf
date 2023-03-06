@@ -1,5 +1,5 @@
 module "helm_addon" {
-  source            = "github.com/aws-ia/terraform-aws-eks-blueprints/modules/kubernetes-addons/helm-addon"
+  source            = "github.com/aws-ia/terraform-aws-eks-blueprints//modules/kubernetes-addons/helm-addon"
   manage_via_gitops = var.manage_via_gitops
   helm_config       = local.helm_config
   set_values        = local.set_values
@@ -9,7 +9,7 @@ module "helm_addon" {
 
 # irsa 
 module "irsa_kong" {
-  source                            = "github.com/aws-ia/terraform-aws-eks-blueprints/terraform-aws-eks-blueprints/modules/irsa"
+  source                            = "github.com/aws-ia/terraform-aws-eks-blueprints//modules/irsa"
   create_kubernetes_namespace       = false
   create_kubernetes_service_account = true
   kubernetes_namespace              = local.helm_config["namespace"]
