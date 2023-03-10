@@ -31,6 +31,8 @@ provider "kubectl" {
 
 
 data "aws_availability_zones" "available" {}
+data "aws_caller_identity" "current" {}
+
 
 locals {
   name   = basename(path.cwd)
@@ -43,6 +45,29 @@ locals {
     Blueprint  = local.name
     GithubRepo = "github.com/aws-ia/terraform-aws-eks-blueprints"
   }
+}
+
+#--------------------------------------------------------------
+# Additional IAM Policy
+#--------------------------------------------------------------
+resource "aws_iam_policy" "additiona_policy" {
+  name_prefix = "additional_policy"
+  policy      = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Stmt1678381903932",
+      "Action": [
+        "lambda:InvokeFunction"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:lambda:${local.region}:${data.aws_caller_identity.current.account_id}:function:*"
+    }
+  ]
+}
+
+POLICY
 }
 
 #---------------------------------------------------------------
@@ -86,6 +111,7 @@ module "eks_blueprints_kubernetes_addons" {
   enable_external_secrets = true
 
   enable_kong_konnect = true
+  kong_irsa_policies = [aws_iam_policy.additiona_policy.arn]
 
   kong_helm_config = {
     version          = "2.16.5"

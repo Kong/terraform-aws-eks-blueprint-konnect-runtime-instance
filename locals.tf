@@ -1,5 +1,6 @@
 locals {
   name                 = "kong"
+  namespace            = try(var.helm_config.namespace, "kong")
   service_account      = try(var.helm_config.service_account, "kong-sa")
   cluster_dns          = try(var.helm_config.cluster_dns, null)
   telemetry_dns        = try(var.helm_config.telemetry_dns, null)
@@ -7,6 +8,7 @@ locals {
   key_secret_name      = try(var.helm_config.key_secret_name, null)
   kong_external_secrets     = try(var.helm_config.kong_external_secrets, "kong-cluster-cert")
   secret_volume_length = try(length(yamldecode(var.helm_config.values[0])["secretVolumes"]), 0)
+  image_tag           = try((yamldecode(var.helm_config.values[0])["image"]["tag"]), "3.2.1.0")
 
   default_helm_config = {
 
@@ -97,6 +99,14 @@ locals {
     {
       name  = "secretVolumes[${local.secret_volume_length}]"
       value = local.kong_external_secrets
+    },
+    {
+      name  = "image.repository"
+      value = "kong/kong-gateway"
+    },
+    {
+      name = "image.tag"
+      value = local.image_tag
     }
   ]
 

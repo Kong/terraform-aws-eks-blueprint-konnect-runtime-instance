@@ -14,7 +14,7 @@ module "irsa_kong" {
   create_kubernetes_service_account = true
   kubernetes_namespace              = local.helm_config["namespace"]
   kubernetes_service_account        = local.helm_config["service_account"]
-  irsa_iam_policies                 = [aws_iam_policy.kong_secretstore.arn]
+  irsa_iam_policies                 = concat([aws_iam_policy.kong_secretstore.arn], var.irsa_policies)
   eks_cluster_id                    = var.addon_context.eks_cluster_id
   eks_oidc_provider_arn             = var.addon_context.eks_oidc_provider_arn
   depends_on = [
