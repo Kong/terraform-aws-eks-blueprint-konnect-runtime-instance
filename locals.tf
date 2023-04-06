@@ -10,22 +10,26 @@ locals {
   secret_volume_length = try(length(yamldecode(var.helm_config.values[0])["secretVolumes"]), 0)
   image_tag           = try((yamldecode(var.helm_config.values[0])["image"]["tag"]), "3.2.1.0")
 
+  eks_oidc_issuer_url  = var.eks_oidc_provider != null ? var.eks_oidc_provider : replace(data.aws_eks_cluster.eks_cluster.identity[0].oidc[0].issuer, "https://", "")
+  eks_cluster_endpoint = var.eks_cluster_endpoint != null ? var.eks_cluster_endpoint : data.aws_eks_cluster.eks_cluster.endpoint
+  eks_cluster_version  = var.eks_cluster_version != null ? var.eks_cluster_version : data.aws_eks_cluster.eks_cluster.version
+
   default_helm_config = {
 
     name             = local.name
     chart            = local.name
     repository       = "https://charts.konghq.com"
     version          = "2.16.5"
-    namespace        = local.name
+    namespace        = local.namespace
     create_namespace = true
     values           = local.default_helm_values
 
-    service_account  = local.service_account
-    cluster_dns      = local.cluster_dns
-    telemetry_dns    = local.telemetry_dns
-    cert_secret_name = local.cert_secret_name
-    key_secret_name  = local.key_secret_name
-    kong_external_secrets = local.kong_external_secrets
+    service_account      = local.service_account
+    cluster_dns          = local.cluster_dns
+    telemetry_dns        = local.telemetry_dns
+    cert_secret_name     = local.cert_secret_name
+    key_secret_name      = local.key_secret_name
+    kong_external_secrets     = local.kong_external_secrets
 
 
     description = "The Kong Ingress Helm Chart configuration"
@@ -120,12 +124,25 @@ locals {
   argocd_gitops_config = {
     enable = false
   }
+  addon_context = {
+    aws_caller_identity_account_id = data.aws_caller_identity.current.account_id
+    aws_caller_identity_arn        = data.aws_caller_identity.current.arn
+    aws_eks_cluster_endpoint       = local.eks_cluster_endpoint
+    aws_partition_id               = data.aws_partition.current.partition
+    aws_region_name                = data.aws_region.current.name
+    eks_cluster_id                 = data.aws_eks_cluster.eks_cluster.id
+    eks_oidc_issuer_url            = local.eks_oidc_issuer_url
+    eks_oidc_provider_arn          = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.eks_oidc_issuer_url}"
+    tags                           = var.tags
+  }
 }
 
 
 data "aws_kms_alias" "secret_manager" {
   name = "alias/aws/secretsmanager"
 }
+
+
 
 #Policy for External Secrets
 
@@ -144,8 +161,8 @@ resource "aws_iam_policy" "kong_secretstore" {
         "secretsmanager:ListSecretVersionIds"
       ],
       "Resource": [
-        "arn:aws:secretsmanager:${var.addon_context.aws_region_name}:${var.addon_context.aws_caller_identity_account_id}:secret:${local.cert_secret_name}-*",
-        "arn:aws:secretsmanager:${var.addon_context.aws_region_name}:${var.addon_context.aws_caller_identity_account_id}:secret:${local.key_secret_name}-*"
+        "arn:aws:secretsmanager:${local.addon_context.aws_region_name}:${local.addon_context.aws_caller_identity_account_id}:secret:${local.cert_secret_name}-*",
+        "arn:aws:secretsmanager:${local.addon_context.aws_region_name}:${local.addon_context.aws_caller_identity_account_id}:secret:${local.key_secret_name}-*"
       ]
     },
     {

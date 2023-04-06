@@ -10,29 +10,43 @@ variable "manage_via_gitops" {
   default     = false
 }
 
-variable "addon_context" {
-  description = "Input configuration for the addon"
-  type = object({
-    aws_caller_identity_account_id = string
-    aws_caller_identity_arn        = string
-    aws_eks_cluster_endpoint       = string
-    aws_partition_id               = string
-    aws_region_name                = string
-    eks_cluster_id                 = string
-    eks_oidc_issuer_url            = string
-    eks_oidc_provider_arn          = string
-    tags                           = map(string)
-  })
-}
-
 variable "irsa_policies" {
   description = "Additional IAM policies for a IAM role for service accounts"
   type        = list(string)
   default     = []
 }
 
-variable "enable_external_secrets" {
-  type        = bool
-  default     = true
-  description = "Enable K8s External Secrets"
+variable "eks_cluster_id" {
+  description = "EKS Cluster Id"
+  type        = string
+}
+
+variable "eks_cluster_endpoint" {
+  description = "Endpoint for your Kubernetes API server"
+  type        = string
+  default     = null
+}
+
+variable "eks_oidc_provider" {
+  description = "The OpenID Connect identity provider (issuer URL without leading `https://`)"
+  type        = string
+  default     = null
+}
+
+variable "eks_cluster_version" {
+  description = "The Kubernetes version for the cluster"
+  type        = string
+  default     = null
+}
+
+variable "data_plane_wait_arn" {
+  description = "Addon deployment will not proceed until this value is known. Set to node group/Fargate profile ARN to wait for data plane to be ready before provisioning addons"
+  type        = string
+  default     = ""
+}
+
+variable "tags" {
+  description = "Additional tags (e.g. `map('BusinessUnit`,`XYZ`)"
+  type        = map(string)
+  default     = {}
 }

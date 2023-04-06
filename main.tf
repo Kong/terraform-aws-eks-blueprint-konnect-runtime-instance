@@ -1,22 +1,24 @@
 module "helm_addon" {
-  source            = "github.com/aws-ia/terraform-aws-eks-blueprints//modules/kubernetes-addons/helm-addon"
+  source            = "github.com/aws-ia/terraform-aws-eks-blueprints/modules/kubernetes-addons/helm-addon"
+  # source            = "../terraform-aws-eks-blueprints/modules/kubernetes-addons/helm-addon"
   manage_via_gitops = var.manage_via_gitops
   helm_config       = local.helm_config
   set_values        = local.set_values
-  addon_context     = var.addon_context
+  addon_context     = local.addon_context
   depends_on        = [kubectl_manifest.secret]
 }
 
 # irsa 
 module "irsa_kong" {
-  source                            = "github.com/aws-ia/terraform-aws-eks-blueprints//modules/irsa"
+  source                            = "github.com/aws-ia/terraform-aws-eks-blueprints/modules/irsa"
+  # source                            = "../terraform-aws-eks-blueprints/modules/irsa"
   create_kubernetes_namespace       = false
   create_kubernetes_service_account = true
   kubernetes_namespace              = local.helm_config["namespace"]
   kubernetes_service_account        = local.helm_config["service_account"]
   irsa_iam_policies                 = concat([aws_iam_policy.kong_secretstore.arn], var.irsa_policies)
-  eks_cluster_id                    = var.addon_context.eks_cluster_id
-  eks_oidc_provider_arn             = var.addon_context.eks_oidc_provider_arn
+  eks_cluster_id                    = local.addon_context.eks_cluster_id
+  eks_oidc_provider_arn             = local.addon_context.eks_oidc_provider_arn
   depends_on = [
     kubernetes_namespace_v1.kong_namespace
   ]
@@ -35,7 +37,7 @@ spec:
   provider:
     aws:
       service: SecretsManager
-      region: ${var.addon_context.aws_region_name}
+      region: ${local.addon_context.aws_region_name}
       auth:
         jwt:
           serviceAccountRef:
@@ -46,7 +48,6 @@ YAML
 
 
 resource "kubectl_manifest" "secret" {
-  count      = var.enable_external_secrets ? 1 : 0
   yaml_body  = <<YAML
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret

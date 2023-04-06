@@ -1,11 +1,15 @@
 provider "aws" {
   region  = local.region
+  profile = "eks"
 }
 
 data "aws_eks_cluster_auth" "this" {
   name = module.eks_blueprints.eks_cluster_id
 }
 
+data "aws_eks_cluster" "this" {
+  name = module.eks_blueprints.eks_cluster_id
+}
 
 provider "kubernetes" {
   host                   = module.eks_blueprints.eks_cluster_endpoint
@@ -32,7 +36,8 @@ provider "kubectl" {
 
 data "aws_availability_zones" "available" {}
 data "aws_caller_identity" "current" {}
-
+data "aws_region" "current" {}
+data "aws_partition" "current" {}
 
 locals {
   name   = basename(path.cwd)
@@ -46,12 +51,11 @@ locals {
     GithubRepo = "github.com/aws-ia/terraform-aws-eks-blueprints"
   }
 }
-
 #--------------------------------------------------------------
 # Additional IAM Policy
 #--------------------------------------------------------------
-resource "aws_iam_policy" "additiona_policy" {
-  name_prefix = "additional_policy"
+resource "aws_iam_policy" "kong_additiona_policy" {
+  name_prefix = "kong_additional_policy"
   policy      = <<POLICY
 {
   "Version": "2012-10-17",
@@ -62,7 +66,7 @@ resource "aws_iam_policy" "additiona_policy" {
         "lambda:InvokeFunction"
       ],
       "Effect": "Allow",
-      "Resource": "arn:aws:lambda:${local.region}:${data.aws_caller_identity.current.account_id}:function:*"
+      "Resource": "arn:aws:lambda:${local.region}:${data.aws_caller_identity.current.account_id}:function:hello-world"
     }
   ]
 }
@@ -70,12 +74,15 @@ resource "aws_iam_policy" "additiona_policy" {
 POLICY
 }
 
+
+
 #---------------------------------------------------------------
 # EKS Blueprints
 #---------------------------------------------------------------
 
 module "eks_blueprints" {
   source = "github.com/aws-ia/terraform-aws-eks-blueprints"
+  # source = "../../../terraform-aws-eks-blueprints"
 
   cluster_name    = local.name
   cluster_version = "1.23"
@@ -99,7 +106,7 @@ module "eks_blueprints" {
 module "eks_blueprints_kubernetes_addons" {
 
   source = "github.com/aws-ia/terraform-aws-eks-blueprints/modules/kubernetes-addons"
-
+  # source = "../../../terraform-aws-eks-blueprints/modules/kubernetes-addons"
 
   eks_cluster_id       = module.eks_blueprints.eks_cluster_id
   eks_cluster_endpoint = module.eks_blueprints.eks_cluster_endpoint
@@ -109,21 +116,42 @@ module "eks_blueprints_kubernetes_addons" {
   #K8s Add-ons
 
   enable_external_secrets = true
+  tags = local.tags
 
-  enable_kong_konnect = true
-  kong_irsa_policies = [aws_iam_policy.additiona_policy.arn]
+}
 
-  kong_helm_config = {
+
+#Module for Kong
+
+module "eks_blueprints_kubernetes_addons_kong" {
+
+  # source = "github.com/aws-ia/terraform-aws-eks-blueprints/modules/kubernetes-addons"
+  source = "../.."
+
+  eks_cluster_id       = module.eks_blueprints.eks_cluster_id
+  eks_cluster_endpoint = module.eks_blueprints.eks_cluster_endpoint
+  eks_oidc_provider    = module.eks_blueprints.oidc_provider
+  eks_cluster_version  = module.eks_blueprints.eks_cluster_version
+
+  tags = local.tags
+
+
+  irsa_policies = [aws_iam_policy.kong_additiona_policy.arn]
+  helm_config = {
     version          = "2.16.5"
+    namespace        = "kong1"
+    service_account  = "kong1-sa"
     cluster_dns      = var.cluster_dns
     telemetry_dns    = var.telemetry_dns
     cert_secret_name = var.cert_secret_name
     key_secret_name  = var.key_secret_name
     values = [templatefile("${path.module}/kong_values.yaml", {})]
   }
-  tags = local.tags
-
+  depends_on = [
+    module.eks_blueprints_kubernetes_addons
+  ]
 }
+
 
 
 #---------------------------------------------------------------
