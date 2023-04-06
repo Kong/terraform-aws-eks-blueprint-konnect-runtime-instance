@@ -1,6 +1,5 @@
 provider "aws" {
   region  = local.region
-  profile = "eks"
 }
 
 data "aws_eks_cluster_auth" "this" {
