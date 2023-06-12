@@ -11,3 +11,35 @@ resource "time_sleep" "this" {
     oidc_provider_arn = var.oidc_provider_arn
   }
 }
+
+
+data "aws_kms_alias" "secret_manager" {
+  name = "alias/aws/secretsmanager"
+}
+
+
+data "aws_iam_policy_document" "kong_secretstore" {
+  statement {
+    sid = "1"
+
+    actions   = [
+      "secretsmanager:GetResourcePolicy",
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:DescribeSecret",
+      "secretsmanager:ListSecretVersionIds"
+    ]
+    resources = [
+      "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:${local.cert_secret_name}-*",
+      "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:${local.key_secret_name}-*"
+    ]
+  }
+  statement {
+    actions = [
+      "kms:Decrypt"
+    ]
+
+    resources = [
+      "${data.aws_kms_alias.secret_manager.arn}"
+    ]
+  }
+}
