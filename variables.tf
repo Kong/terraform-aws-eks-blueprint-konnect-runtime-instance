@@ -1,52 +1,49 @@
-variable "helm_config" {
-  description = "Kong Helm Configuration"
-  type        = any
+variable "tags" {
+  description = "A map of tags to add to all resources"
+  type        = map(string)
   default     = {}
 }
 
-variable "manage_via_gitops" {
-  description = "Determines if the add-on should be managed via GitOps."
+variable "cluster_name" {
+  description = "Name of the EKS cluster"
+  type        = string
+}
+
+variable "cluster_endpoint" {
+  description = "Endpoint for your Kubernetes API server"
+  type        = string
+}
+
+variable "cluster_version" {
+  description = "Kubernetes `<major>.<minor>` version to use for the EKS cluster (i.e.: `1.24`)"
+  type        = string
+}
+
+variable "oidc_provider_arn" {
+  description = "The ARN of the cluster OIDC Provider"
+  type        = string
+}
+
+variable "enable_kong_konnect" {
+  description = "Enable Kong add-on"
   type        = bool
   default     = false
 }
 
-variable "irsa_policies" {
-  description = "Additional IAM policies for a IAM role for service accounts"
+variable "kong_config" {
+  description = "Kong addon configuration values"
+  type        = any
+  default     = {}
+}
+
+variable "create_delay_duration" {
+  description = "The duration to wait before creating resources"
+  type        = string
+  default     = "30s"
+}
+
+variable "create_delay_dependencies" {
+  description = "Dependency attribute which must be resolved before starting the `create_delay_duration`"
   type        = list(string)
   default     = []
-}
-
-variable "eks_cluster_id" {
-  description = "EKS Cluster Id"
-  type        = string
-}
-
-variable "eks_cluster_endpoint" {
-  description = "Endpoint for your Kubernetes API server"
-  type        = string
-  default     = null
-}
-
-variable "eks_oidc_provider" {
-  description = "The OpenID Connect identity provider (issuer URL without leading `https://`)"
-  type        = string
-  default     = null
-}
-
-variable "eks_cluster_version" {
-  description = "The Kubernetes version for the cluster"
-  type        = string
-  default     = null
-}
-
-variable "data_plane_wait_arn" {
-  description = "Addon deployment will not proceed until this value is known. Set to node group/Fargate profile ARN to wait for data plane to be ready before provisioning addons"
-  type        = string
-  default     = ""
-}
-
-variable "tags" {
-  description = "Additional tags (e.g. `map('BusinessUnit`,`XYZ`)"
-  type        = map(string)
-  default     = {}
 }

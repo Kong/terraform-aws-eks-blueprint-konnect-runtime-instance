@@ -2,16 +2,12 @@ data "aws_partition" "current" {}
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
-resource "time_sleep" "dataplane" {
-  create_duration = "10s"
-
+resource "time_sleep" "this" {
+  create_duration = var.create_delay_duration
   triggers = {
-    data_plane_wait_arn = var.data_plane_wait_arn # this waits for the data plane to be ready
-    eks_cluster_id      = var.eks_cluster_id      # this ties it to downstream resources
+    cluster_endpoint  = var.cluster_endpoint
+    cluster_name      = var.cluster_name
+    custom            = join(",", var.create_delay_dependencies)
+    oidc_provider_arn = var.oidc_provider_arn
   }
-}
-
-data "aws_eks_cluster" "eks_cluster" {
-  # this makes downstream resources wait for data plane to be ready
-  name = time_sleep.dataplane.triggers["eks_cluster_id"]
 }

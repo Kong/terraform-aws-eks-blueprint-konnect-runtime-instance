@@ -1,59 +1,104 @@
-module "helm_addon" {
-  source            = "github.com/aws-ia/terraform-aws-eks-blueprints/modules/kubernetes-addons/helm-addon"
-  # source            = "../terraform-aws-eks-blueprints/modules/kubernetes-addons/helm-addon"
-  manage_via_gitops = var.manage_via_gitops
-  helm_config       = local.helm_config
-  set_values        = local.set_values
-  addon_context     = local.addon_context
-  depends_on        = [kubectl_manifest.secret]
+###########Service Account##########
+
+resource "kubernetes_service_account_v1" "irsa" {
+  count = var.enable_kong_konnect && local.create_kubernetes_service_account ? 1 : 0
+  metadata {
+    name        = local.service_account
+    namespace   = local.namespace
+    annotations = { "eks.amazonaws.com/role-arn" : module.kong.iam_role_arn }
+  }
+
+  automount_service_account_token = true
+  depends_on = [module.kong.namespace, module.kong.iam_role_arn]
 }
 
-# irsa 
-module "irsa_kong" {
-  source                            = "github.com/aws-ia/terraform-aws-eks-blueprints/modules/irsa"
-  # source                            = "../terraform-aws-eks-blueprints/modules/irsa"
-  create_kubernetes_namespace       = false
-  create_kubernetes_service_account = true
-  kubernetes_namespace              = local.helm_config["namespace"]
-  kubernetes_service_account        = local.helm_config["service_account"]
-  irsa_iam_policies                 = concat([aws_iam_policy.kong_secretstore.arn], var.irsa_policies)
-  eks_cluster_id                    = local.addon_context.eks_cluster_id
-  eks_oidc_provider_arn             = local.addon_context.eks_oidc_provider_arn
-  depends_on = [
-    kubernetes_namespace_v1.kong_namespace
-  ]
+###########Kong Helm Module##########
+module "kong" {
+  source           = "aws-ia/eks-blueprints-addon/aws"
+  version          = "~> 1.0"
+
+  create           = var.enable_kong_konnect
+  chart            = local.name
+  chart_version    = local.chart_version
+  repository       = local.repository
+  description      = "Kong konnect"
+  namespace        = local.namespace
+  create_namespace = local.create_namespace
+
+  set              = local.set_values
+  values           = local.values
+
+  set_irsa_names = ["deployment.serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"]
+  # # Equivalent to the following but the ARN is only known internally to the module
+  # set = [{
+  #   name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+  #   value = iam_role_arn.this[0].arn
+  # }]
+
+  # IAM role for service account (IRSA)
+  create_role                   = true
+  role_name                     = local.role_name
+  role_name_use_prefix          = try(var.kong_config.role_name_use_prefix, true)
+  role_path                     = try(var.kong_config.role_path, "/")
+  role_permissions_boundary_arn = lookup(var.kong_config, "role_permissions_boundary_arn", null)
+  role_description              = try(var.kong_config.role_description, "IRSA for kong")
+  role_policies                 = lookup(var.kong_config, "role_policies", {})
+  source_policy_documents = compact(concat(
+    data.aws_iam_policy_document.kong_secretstore[*].json,
+    lookup(var.kong_config, "source_policy_documents", [])
+  ))
+  override_policy_documents = lookup(var.kong_config, "override_policy_documents", [])
+  policy_statements         = lookup(var.kong_config, "policy_statements", [])
+  policy_name               = try(var.kong_config.policy_name, "kong")
+  policy_name_use_prefix    = try(var.kong_config.policy_name_use_prefix, true)
+  policy_path               = try(var.kong_config.policy_path, null)
+  policy_description        = try(var.kong_config.policy_description, "IAM Policy for Kong")
+
+  oidc_providers = {
+    this = {
+      provider_arn = var.oidc_provider_arn
+      # namespace is inherited from chart
+      namespace       = local.namespace
+      service_account = local.service_account
+    }
+  }
+
+  tags = {
+    Environment = "dev"
+  }
 }
-
-
 
 resource "kubectl_manifest" "secretstore" {
+  count = var.enable_kong_konnect ? 1 : 0
+
   yaml_body  = <<YAML
 apiVersion: external-secrets.io/v1beta1
 kind: SecretStore
 metadata:
   name: kong-secretstore
-  namespace: ${local.helm_config["namespace"]}
+  namespace: ${local.namespace}
 spec:
   provider:
     aws:
       service: SecretsManager
-      region: ${local.addon_context.aws_region_name}
+      region: ${data.aws_region.current.name}
       auth:
         jwt:
           serviceAccountRef:
-            name: ${local.helm_config["service_account"]}
+            name: ${local.service_account}
 YAML
-  depends_on = [module.irsa_kong]
+  depends_on = [module.kong.namespace, kubernetes_service_account_v1.irsa]
 }
 
 
 resource "kubectl_manifest" "secret" {
+  count = var.enable_kong_konnect ? 1 : 0
   yaml_body  = <<YAML
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
   name: ${local.kong_external_secrets}
-  namespace: ${local.helm_config["namespace"]}
+  namespace: ${local.namespace}
 spec:
   refreshInterval: 1h
   secretStoreRef:
@@ -72,20 +117,5 @@ spec:
     remoteRef:
       key: ${local.key_secret_name}
 YAML
-  depends_on = [module.irsa_kong]
-}
-
-
-
-#creating namespace
-
-resource "kubernetes_namespace_v1" "kong_namespace" {
-  count = try(local.helm_config["create_namespace"], true) && local.helm_config["namespace"] != "kube-system" ? 1 : 0
-  metadata {
-    name = local.helm_config["namespace"]
-
-    labels = {
-      "app.kubernetes.io/managed-by" = "terraform-aws-eks-blueprints"
-    }
-  }
+  depends_on = [kubectl_manifest.secretstore]
 }
