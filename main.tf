@@ -15,7 +15,7 @@ resource "kubernetes_service_account_v1" "irsa" {
 ###########Kong Helm Module##########
 module "kong" {
   source           = "aws-ia/eks-blueprints-addon/aws"
-  version          = "1.1.0"
+  version          = "1.0.0"
 
   create           = var.enable_kong_konnect
   chart            = local.name
