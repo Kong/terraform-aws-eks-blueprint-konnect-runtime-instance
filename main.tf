@@ -42,7 +42,7 @@ module "kong_helm" {
   repository       = local.repository
   description      = "Kong konnect"
   namespace        = local.namespace
-  create_namespace = true
+  create_namespace = false
 
   set              = local.set_values
   values           = local.values
