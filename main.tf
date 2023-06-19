@@ -1,19 +1,38 @@
-###########Service Account##########
+###########Service Account###########
 
-resource "kubernetes_service_account_v1" "irsa" {
+resource "kubernetes_namespace_v1" "kong" {
+  count = var.enable_kong_konnect && local.create_namespace && local.namespace != "kube-system" ? 1 : 0
+
+  metadata {
+    name = local.namespace
+  }
+
+  timeouts {
+    delete = "15m"
+  }
+
+  lifecycle {
+    ignore_changes = [
+      metadata[0].labels,
+      metadata[0].annotations,
+    ]
+  }
+}
+
+resource "kubernetes_service_account_v1" "kong" {
   count = var.enable_kong_konnect && local.create_kubernetes_service_account ? 1 : 0
   metadata {
     name        = local.service_account
-    namespace   = local.namespace
-    annotations = { "eks.amazonaws.com/role-arn" : module.kong.iam_role_arn }
+
+    namespace   = try(kubernetes_namespace_v1.kong[0].metadata[0].name, local.namespace)
+    annotations = { "eks.amazonaws.com/role-arn" : module.kong_irsa[0].iam_role_arn }
   }
 
   automount_service_account_token = true
-  depends_on = [module.kong.namespace, module.kong.iam_role_arn]
 }
 
 ###########Kong Helm Module##########
-module "kong" {
+module "kong_helm" {
   source           = "aws-ia/eks-blueprints-addon/aws"
   version          = "1.1.0"
 
@@ -23,7 +42,7 @@ module "kong" {
   repository       = local.repository
   description      = "Kong konnect"
   namespace        = local.namespace
-  create_namespace = local.create_namespace
+  create_namespace = false
 
   set              = local.set_values
   values           = local.values
@@ -35,6 +54,16 @@ module "kong" {
   #   value = iam_role_arn.this[0].arn
   # }]
 
+  tags = var.tags
+  depends_on = [kubectl_manifest.secret]
+}
+
+module "kong_irsa" {
+  count   = var.enable_kong_konnect ? 1 : 0
+  source  = "aws-ia/eks-blueprints-addon/aws"
+  version = "1.1.0"
+
+  create_release = false
   # IAM role for service account (IRSA)
   create_role                   = true
   role_name                     = local.role_name
@@ -62,15 +91,10 @@ module "kong" {
       service_account = local.service_account
     }
   }
-
-  tags = {
-    Environment = "dev"
-  }
 }
 
 resource "kubectl_manifest" "secretstore" {
   count = var.enable_kong_konnect ? 1 : 0
-
   yaml_body  = <<YAML
 apiVersion: external-secrets.io/v1beta1
 kind: SecretStore
@@ -87,7 +111,10 @@ spec:
           serviceAccountRef:
             name: ${local.service_account}
 YAML
-  depends_on = [module.kong.namespace, kubernetes_service_account_v1.irsa]
+  depends_on = [
+    module.kong_irsa,
+    kubernetes_service_account_v1.kong
+  ]
 }
 
 
