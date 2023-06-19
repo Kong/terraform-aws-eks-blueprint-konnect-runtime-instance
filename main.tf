@@ -1,4 +1,4 @@
-###########Service Account###########
+###########Namespace###########
 
 resource "kubernetes_namespace_v1" "kong" {
   count = var.enable_kong_konnect && local.create_namespace && local.namespace != "kube-system" ? 1 : 0
@@ -19,6 +19,8 @@ resource "kubernetes_namespace_v1" "kong" {
   }
 }
 
+###########Service Account###########
+
 resource "kubernetes_service_account_v1" "kong" {
   count = var.enable_kong_konnect && local.create_kubernetes_service_account ? 1 : 0
   metadata {
@@ -32,6 +34,7 @@ resource "kubernetes_service_account_v1" "kong" {
 }
 
 ###########Kong Helm Module##########
+
 module "kong_helm" {
   source           = "aws-ia/eks-blueprints-addon/aws"
   version          = "1.1.0"
@@ -57,6 +60,8 @@ module "kong_helm" {
   tags = var.tags
   depends_on = [kubectl_manifest.secret]
 }
+
+###########IRSA###########
 
 module "kong_irsa" {
   count   = var.enable_kong_konnect ? 1 : 0
@@ -93,6 +98,8 @@ module "kong_irsa" {
   }
 }
 
+###########Secret Store###########
+
 resource "kubectl_manifest" "secretstore" {
   count = var.enable_kong_konnect ? 1 : 0
   yaml_body  = <<YAML
@@ -117,6 +124,7 @@ YAML
   ]
 }
 
+###########External Secret###########
 
 resource "kubectl_manifest" "secret" {
   count = var.enable_kong_konnect ? 1 : 0

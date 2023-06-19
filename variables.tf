@@ -1,9 +1,3 @@
-variable "tags" {
-  description = "A map of tags to add to all resources"
-  type        = map(string)
-  default     = {}
-}
-
 variable "cluster_name" {
   description = "Name of the EKS cluster"
   type        = string
@@ -46,4 +40,10 @@ variable "create_delay_dependencies" {
   description = "Dependency attribute which must be resolved before starting the `create_delay_duration`"
   type        = list(string)
   default     = []
+}
+
+variable "tags" {
+  description = "A map of tags to add to all resources"
+  type        = map(string)
+  default     = {}
 }
