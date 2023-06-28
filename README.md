@@ -1,5 +1,10 @@
 <!-- BEGIN_TF_DOCS -->
 # Kong Helm Chart
+
+<p align="center">
+  <img src="https://konghq.com/wp-content/uploads/2018/08/kong-combination-mark-color-256px.png" /></div>
+</p>
+
 ## Introduction 
 
 Kong Konnect is an API lifecycle management platform designed from the ground up for the cloud native era and delivered as a service. This platform lets you build modern applications better, faster, and more securely. The management plane is hosted in the cloud by Kong, while the runtime engine, Kong Gateway — Kong’s lightweight, fast, and flexible API gateway — is managed by you within your preferred network environment.
