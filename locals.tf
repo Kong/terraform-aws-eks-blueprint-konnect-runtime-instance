@@ -34,7 +34,7 @@ locals {
     },
     {
       name  = "deployment.serviceAccount.create"
-      value = true
+      value = false
     },
     # {
     #   name  = "deployment.serviceAccount.name"
