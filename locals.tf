@@ -12,23 +12,20 @@ locals {
   chart_version         = try(var.kong_config.chart_version, "2.16.5")
   repository            = try(var.kong_config.repository, "https://charts.konghq.com")
   values                = try(var.kong_config.values, [])
-  service_account       = try(var.kong_config.service_account, "kong-sa")
+
   cluster_dns           = try(var.kong_config.cluster_dns, null)
   telemetry_dns         = try(var.kong_config.telemetry_dns, null)
   cert_secret_name      = try(var.kong_config.cert_secret_name, null)
   key_secret_name       = try(var.kong_config.key_secret_name, null)
   kong_external_secrets = try(var.kong_config.kong_external_secrets, "kong-cluster-cert")
   secret_volume_length  = try(length(yamldecode(var.kong_config.values[0])["secretVolumes"]), 0)
-  create_kubernetes_service_account = try(var.kong_config.create_kubernetes_service_account, true)
-
-  create_role                   = try(var.kong_config.create_role, true)
-  role_name                     = try(var.kong_config.role_name, "kong")
-  role_name_use_prefix          = try(var.kong_config.role_name_use_prefix, true)
-  role_path                     = try(var.kong_config.role_path, "/")
-  role_permissions_boundary_arn = lookup(var.kong_config, "role_permissions_boundary_arn", null)
-  role_description              = try(var.kong_config.role_description, "IRSA for external-secrets operator")
-  role_policies                 = lookup(var.kong_config, "role_policies", {})
-  create_policy                 = try(var.kong_config.create_policy, false)
+  external_secret_service_account_name                 = "external-secret-irsa"
+  external_secrets_irsa_role_name                     = "external-secret-irsa"
+  external_secrets_irsa_role_name_use_prefix          = true
+  external_secrets_irsa_role_path                     = "/"
+  external_secrets_irsa_role_permissions_boundary_arn = null
+  external_secrets_irsa_role_description              = "IRSA for external-secrets operator"
+  external_secrets_irsa_role_policies                 = {}
 
   set_values = [
     {
@@ -39,10 +36,10 @@ locals {
       name  = "deployment.serviceAccount.create"
       value = false
     },
-    {
-      name  = "deployment.serviceAccount.name"
-      value = local.service_account
-    },
+    # {
+    #   name  = "deployment.serviceAccount.name"
+    #   value = local.service_account
+    # },
     {
       name  = "env.database"
       value = "off"
