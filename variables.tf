@@ -18,11 +18,11 @@ variable "oidc_provider_arn" {
   type        = string
 }
 
-variable "enable_kong_konnect" {
-  description = "Enable Kong add-on"
-  type        = bool
-  default     = false
-}
+# variable "enable_kong_konnect" {
+#   description = "Enable Kong add-on"
+#   type        = bool
+#   default     = false
+# }
 
 variable "kong_config" {
   description = "Kong addon configuration values"
