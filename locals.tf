@@ -9,7 +9,7 @@ locals {
   namespace             = try(var.kong_config.namespace, "kong")
   create_namespace      = try(var.kong_config.create_namespace, true)
   chart                 = "kong"
-  chart_version         = try(var.kong_config.chart_version, "2.16.5")
+  chart_version         = try(var.kong_config.chart_version, null)
   repository            = try(var.kong_config.repository, "https://charts.konghq.com")
   values                = try(var.kong_config.values, [])
 
