@@ -9,7 +9,7 @@ locals {
   namespace             = try(var.kong_config.namespace, "kong")
   create_namespace      = try(var.kong_config.create_namespace, true)
   chart                 = "kong"
-  chart_version         = try(var.kong_config.chart_version, "2.16.5")
+  chart_version         = try(var.kong_config.chart_version, null)
   repository            = try(var.kong_config.repository, "https://charts.konghq.com")
   values                = try(var.kong_config.values, [])
 
@@ -17,15 +17,18 @@ locals {
   telemetry_dns         = try(var.kong_config.telemetry_dns, null)
   cert_secret_name      = try(var.kong_config.cert_secret_name, null)
   key_secret_name       = try(var.kong_config.key_secret_name, null)
-  kong_external_secrets = try(var.kong_config.kong_external_secrets, "kong-cluster-cert")
+  kong_external_secrets = try(var.kong_config.kong_external_secrets, "konnect-client-tls")
+  tls_cert                                            = "tls.crt"
+  tls_key                                             = "tls.key"
   secret_volume_length  = try(length(yamldecode(var.kong_config.values[0])["secretVolumes"]), 0)
-  external_secret_service_account_name                 = "external-secret-irsa"
+  external_secret_service_account_name                = "external-secret-irsa"
   external_secrets_irsa_role_name                     = "external-secret-irsa"
   external_secrets_irsa_role_name_use_prefix          = true
   external_secrets_irsa_role_path                     = "/"
   external_secrets_irsa_role_permissions_boundary_arn = null
   external_secrets_irsa_role_description              = "IRSA for external-secrets operator"
   external_secrets_irsa_role_policies                 = {}
+
 
   set_values = [
     {
@@ -46,11 +49,11 @@ locals {
     },
     {
       name  = "env.cluster_cert"
-      value = "/etc/secrets/${local.kong_external_secrets}/kong_cert"
+      value = "/etc/secrets/${local.kong_external_secrets}/${local.tls_cert}"
     },
     {
       name  = "env.cluster_cert_key"
-      value = "/etc/secrets/${local.kong_external_secrets}/kong_key"
+      value = "/etc/secrets/${local.kong_external_secrets}/${local.tls_key}"
     },
     {
       name  = "env.lua_ssl_trusted_certificate"

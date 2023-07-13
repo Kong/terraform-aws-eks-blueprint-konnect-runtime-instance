@@ -1,7 +1,7 @@
 ###########Namespace###########
 
 resource "kubernetes_namespace_v1" "kong" {
-  count = var.enable_kong_konnect && local.create_namespace && local.namespace != "kube-system" ? 1 : 0
+  # count = var.enable_kong_konnect && local.create_namespace && local.namespace != "kube-system" ? 1 : 0
 
   metadata {
     name = local.namespace
@@ -51,7 +51,7 @@ resource "kubernetes_service_account_v1" "external_secret_sa" {
   metadata {
     name        = local.external_secret_service_account_name
     namespace   = local.namespace
-    annotations = { "eks.amazonaws.com/role-arn" : module.external_secret_irsa[0].iam_role_arn }
+    annotations = { "eks.amazonaws.com/role-arn" : module.external_secret_irsa.iam_role_arn }
   }
 
   automount_service_account_token = true
@@ -61,7 +61,7 @@ resource "kubernetes_service_account_v1" "external_secret_sa" {
 # Note, this source module does not has "s" in eks-blueprints-addon
 
 module "external_secret_irsa" {
-  count   = var.enable_kong_konnect ? 1 : 0
+  # count   = var.enable_kong_konnect ? 1 : 0
   source  = "aws-ia/eks-blueprints-addon/aws"
   version = "1.1.0"
 
@@ -98,7 +98,7 @@ module "external_secret_irsa" {
 ###########Secret Store###########
 
 resource "kubectl_manifest" "secretstore" {
-  count = var.enable_kong_konnect ? 1 : 0
+  # count = var.enable_kong_konnect ? 1 : 0
   yaml_body  = <<YAML
 apiVersion: external-secrets.io/v1beta1
 kind: SecretStore
@@ -125,7 +125,7 @@ YAML
 ###########External Secret###########
 
 resource "kubectl_manifest" "secret" {
-  count = var.enable_kong_konnect ? 1 : 0
+  # count = var.enable_kong_konnect ? 1 : 0
   yaml_body  = <<YAML
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
@@ -143,10 +143,10 @@ spec:
   template:
     type: kubernetes.io/tls
   data:
-  - secretKey: kong_cert
+  - secretKey: ${local.tls_cert}
     remoteRef:
       key: ${local.cert_secret_name}
-  - secretKey: kong_key
+  - secretKey: ${local.tls_key}
     remoteRef:
       key: ${local.key_secret_name}
 YAML
@@ -160,8 +160,8 @@ module "kong_helm" {
   source           = "aws-ia/eks-blueprints-addon/aws"
   version          = "1.1.0"
 
-  create           = var.enable_kong_konnect
-  chart            = local.name
+  create           = true
+  chart            = local.chart
   chart_version    = local.chart_version
   repository       = local.repository
   description      = "Kong konnect"
