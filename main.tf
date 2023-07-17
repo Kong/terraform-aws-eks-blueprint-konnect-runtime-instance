@@ -30,18 +30,23 @@ module "add_ons" {
   cluster_version   = var.cluster_version
   oidc_provider_arn = var.oidc_provider_arn
 
-  # # EKS Add-on
-  # eks_addons = {
-  #   coredns    = {}
-  #   vpc-cni    = {}
-  #   kube-proxy = {}
-  # }
 
   enable_external_secrets = true
   // Following to ensure that the IRSA with which the External Secret Pod is running does not have any access. 
   // Ideally, this should not use IRSA at all as its the property of `SecretStore` CRD
   external_secrets_secrets_manager_arns = []
   external_secrets_ssm_parameter_arns = []
+  //Changing the default port to avoid port conflict during fargate specially.
+  // Setting Wait to true as found during fargate testing
+  external_secrets = { 
+    wait = true
+    set = [
+        {
+            name = "webhook.port"
+            value = "9443"
+        }
+    ]
+  }
 }
 
 
