@@ -22,7 +22,7 @@ resource "kubernetes_namespace_v1" "kong" {
 ###########AddOns for Cluster. Note the module name has addon"s"###########
 
 module "add_ons" {
-  source = "aws-ia/eks-blueprints-addons/aws"
+  source  = "aws-ia/eks-blueprints-addons/aws"
   version = "1.1.0"
 
   cluster_name      = var.cluster_name
@@ -35,16 +35,16 @@ module "add_ons" {
   // Following to ensure that the IRSA with which the External Secret Pod is running does not have any access. 
   // Ideally, this should not use IRSA at all as its the property of `SecretStore` CRD
   external_secrets_secrets_manager_arns = []
-  external_secrets_ssm_parameter_arns = []
+  external_secrets_ssm_parameter_arns   = []
   //Changing the default port to avoid port conflict during fargate specially.
   // Setting Wait to true as found during fargate testing
-  external_secrets = { 
+  external_secrets = {
     wait = true
     set = [
-        {
-            name = "webhook.port"
-            value = "9443"
-        }
+      {
+        name  = "webhook.port"
+        value = "9443"
+      }
     ]
   }
 }
@@ -104,7 +104,7 @@ module "external_secret_irsa" {
 
 resource "kubectl_manifest" "secretstore" {
   # count = var.enable_kong_konnect ? 1 : 0
-  yaml_body  = <<YAML
+  yaml_body = <<YAML
 apiVersion: external-secrets.io/v1beta1
 kind: SecretStore
 metadata:
@@ -162,8 +162,8 @@ YAML
 # Note, this source module does not has "s" in eks-blueprints-addon
 
 module "kong_helm" {
-  source           = "aws-ia/eks-blueprints-addon/aws"
-  version          = "1.1.0"
+  source  = "aws-ia/eks-blueprints-addon/aws"
+  version = "1.1.0"
 
   create           = true
   chart            = local.chart
@@ -173,8 +173,8 @@ module "kong_helm" {
   namespace        = local.namespace
   create_namespace = false
 
-  set              = local.set_values
-  values           = local.values
+  set    = local.set_values
+  values = local.values
 
   tags = var.tags
   depends_on = [
