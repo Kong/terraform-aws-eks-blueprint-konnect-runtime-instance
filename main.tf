@@ -66,7 +66,6 @@ resource "kubernetes_service_account_v1" "external_secret_sa" {
 # Note, this source module does not has "s" in eks-blueprints-addon
 
 module "external_secret_irsa" {
-  # count   = var.enable_kong_konnect ? 1 : 0
   source  = "aws-ia/eks-blueprints-addon/aws"
   version = "1.1.0"
 
@@ -103,7 +102,6 @@ module "external_secret_irsa" {
 ###########Secret Store###########
 
 resource "kubectl_manifest" "secretstore" {
-  # count = var.enable_kong_konnect ? 1 : 0
   yaml_body = <<YAML
 apiVersion: external-secrets.io/v1beta1
 kind: SecretStore
@@ -130,7 +128,6 @@ YAML
 ###########External Secret###########
 
 resource "kubectl_manifest" "secret" {
-  # count = var.enable_kong_konnect ? 1 : 0
   yaml_body  = <<YAML
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
