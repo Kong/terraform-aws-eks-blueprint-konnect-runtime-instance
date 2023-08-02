@@ -22,7 +22,7 @@ data "aws_iam_policy_document" "kong_external_secret_secretstore" {
   statement {
     sid = "1"
 
-    actions   = [
+    actions = [
       "secretsmanager:GetResourcePolicy",
       "secretsmanager:GetSecretValue",
       "secretsmanager:DescribeSecret",
