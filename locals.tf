@@ -13,6 +13,8 @@ locals {
   repository       = try(var.kong_config.repository, "https://charts.konghq.com")
   values           = try(var.kong_config.values, [])
 
+  enable_external_secrets = try(var.kong_config.add_ons.enable_external_secrets, true)
+
   cluster_dns                                         = try(var.kong_config.cluster_dns, null)
   telemetry_dns                                       = try(var.kong_config.telemetry_dns, null)
   cert_secret_name                                    = try(var.kong_config.cert_secret_name, null)
